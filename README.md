@@ -1,4 +1,4 @@
-# smslive
+# memphis
 
 $ git clone ...
 $ make build

@@ -5,38 +5,69 @@ services:
       context: .
       target: builder
     depends_on:
-      - kafka
+      db:
+        condition: service_healthy
     env_file: .env
 
-  # influxdb:
-  #   image: influxdb:2.7.10
-  #   restart: always
-  #   environment:
-  #     DOCKER_INFLUXDB_INIT_MODE: setup
-  #     DOCKER_INFLUXDB_INIT_ORG: business
-  #     DOCKER_INFLUXDB_INIT_BUCKET: users_business_events
-  #     DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUXDB_USERNAME}
-  #     DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUXDB_PASSWORD}
-  #   ports:
-  #     - "8086:8086"
-  #   logging:
-  #     driver: "json-file"
-  #     options:
-  #       max-size: "10m"
-  #       max-file: "3"
+  db:
+    image: postgres:alpine
+    restart: always
+    # user: postgres
+    # secrets:
+    #   - db-password
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=db
+      # - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
+    ports:
+      - 5433:5432
+    # expose:
+    #   - 5432
+    healthcheck:
+      test: [ "CMD", "pg_isready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # grafana:
-  #   image: grafana/grafana:latest
-  #   ports:
-  #     - "3000:3000"
-  #   depends_on:
-  #     - influxdb
-  #   restart: always
-  #   logging:
-  #     driver: "json-file"
-  #     options:
-  #       max-size: "10m"
-  #       max-file: "3"
+  redis:
+    image: "redis:alpine"
+    restart: always
+    ports:
+      - 6380:6380
+    command: redis-server --port 6380
+
+  influxdb:
+    image: influxdb:2.7.10
+    restart: always
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_ORG: business
+      DOCKER_INFLUXDB_INIT_BUCKET: users_business_events
+      DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUXDB_USERNAME}
+      DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUXDB_PASSWORD}
+    ports:
+      - "8086:8086"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    depends_on:
+      - influxdb
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   zookeeper:
     image: bitnami/zookeeper:latest
@@ -99,3 +130,8 @@ services:
       - 80:80
     depends_on:
       - backend
+
+volumes:
+  db-data:
+
+

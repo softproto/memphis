@@ -24,7 +24,6 @@ const inbox_partition = 0
 const kafka_retries = 10
 const kafka_addr = "kafka:29092"
 
-
 func main() {
 	log.Println("main() started")
 
@@ -71,9 +70,9 @@ func main() {
 func connectToKafka(ctx context.Context, addr string, topic string, partition int, retries int) *kafka.Conn {
 	var conn *kafka.Conn
 	var err error
-
-	for i := 0; i < retries; i++ {
-		log.Println("try ", i)
+	log.Println("Connect to Kafka... ")
+	for i := 1; i <= retries; i++ {
+		log.Print("try ", i)
 		conn, err = kafka.DialLeader(ctx, "tcp", addr, topic, partition)
 		if err == nil {
 			break
@@ -83,6 +82,7 @@ func connectToKafka(ctx context.Context, addr string, topic string, partition in
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Println(" ...done")
 	return conn
 }
 
